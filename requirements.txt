@@ -1,0 +1,19 @@
+# Core LLM + Azure OpenAI
+openai>=1.45.0
+langchain-openai>=0.1.7
+langchain-core>=0.2.39
+langgraph>=0.1.9
+python-dotenv>=1.0.1
+
+# Geospatial stack
+geopandas>=1.0.1
+GeoAlchemy2>=0.15.0
+folium>=0.17.0
+mapclassify>=2.6.1
+matplotlib>=3.9.2
+
+# Database + data handling
+psycopg2-binary>=2.9.9
+pandas>=2.2.3
+os
+IPython.display
