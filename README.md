@@ -221,18 +221,4 @@ def chat_loop():
 chat_loop()
 ```
 
----
 
-## 7. Troubleshooting
-
-- **api_key must be set**: `.env` not loaded. Check your file path.
-- **relation 'rivers' does not exist**: Update table name in `plan_to_sql()`.
-- **column 'type' does not exist**: Adjust your schema or `where_clause`.
-
----
-
-## 8. Summary
-
-This Proof of Concept shows how a Large Language Model can act as a planning layer between human language and geospatial databases.
-
-Natural language → LLM plan → SQL → PostGIS → Table result.
