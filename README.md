@@ -7,34 +7,19 @@ Example query:
 > “Find 100 residential houses within 200 meters of a river in Kristiansand.”
 
 The goal is to show an end-to-end pipeline from:
-**Natural language → LLM plan → SQL → PostGIS → Tabular result.**
+**Natural language → LLM planner → Structure plan → SQL → PostGIS → Visualization(map).**
 
 ---
 
-## 1. Installation
+## Installation
 
-### 1.1 Clone the project
+#### 1.1 Clone the project
 
 ```bash
 git clone https://github.com/MatinM-96/NordKart-MasterOppgave.git
 cd NordKart-MasterOppgave
 ```
-
-### 1.2 Create and activate a virtual environment (optional, but recommended)
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-On Windows (PowerShell):
-
-```powershell
-python -m venv venv
-venv\Scripts\Activate.ps1
-```
-
-### 1.3 Install requirements
+#### 1.2 Install requirements
 
 All dependencies are listed in `requirements.txt`. Install them with:
 
@@ -42,11 +27,11 @@ All dependencies are listed in `requirements.txt`. Install them with:
 pip install -r requirements.txt
 ```
 
-## 2. Setup: Azure OpenAI and database credentials (.env)
+## Setup: Azure OpenAI and database credentials (.env)
 
 All secrets (keys, endpoints, DB connection string) are stored in a `.env` file that is not committed to Git.
 
-### 2.1 Create `.env` file
+#### 2.1 Create `.env` file
 
 In the project root (same folder as `requirements.txt`), create a file named `.env`:
 
@@ -62,22 +47,8 @@ AZURE_OPENAI_KEY=YOUR_AZURE_OPENAI_KEY
 PGCONN_STRING=postgresql://USERNAME:PASSWORD@HOST:5432/DATABASE
 ```
 
-Notes:
 
-- Do not put spaces around `=`.
-- Replace placeholders with your real values.
-- Do not quote the values, just plain text.
-
-### 2.2 Ensure `.env` is ignored by Git
-
-In your `.gitignore` file, make sure you have:
-
-```text
-.env
-```
-
-
-### 2.3 Load and test the environment variables
+#### 2.2 Load and test the environment variables
 
 In a Python shell or Jupyter notebook:
 
