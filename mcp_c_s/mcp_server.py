@@ -1,57 +1,33 @@
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-import os
+import json
+import logging
 import sys
-import psycopg2
-import pandas as pd
-import json  # ← ADD THIS
+import os
+
+
+
+project_root = os.path.dirname(os.path.abspath(__file__))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+parent_dir = os.path.dirname(project_root)
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.session import ServerSession
-from dotenv import load_dotenv
+from database import Database
+from config import PGCONN_STRING
+from log_utils import setup_logging
 
-# Add logging
-import logging
-logging.basicConfig(level=logging.INFO, stream=sys.stderr)  # Changed to INFO
+setup_logging()
 logger = logging.getLogger(__name__)
 
-load_dotenv()
 
-# ---------- Database ----------
-class Database:
-    def __init__(self, conn_str: str):
-        self.conn_str = conn_str
-        self.conn = None
-    
-    def connect(self) -> "Database":
-        try:
-            logger.info("Connecting to database...")
-            self.conn = psycopg2.connect(self.conn_str)
-            logger.info("Database connected successfully")
-            return self
-        except Exception as e:
-            logger.error(f"Database connection failed: {e}")
-            raise
-    
-    def disconnect(self) -> None:
-        if self.conn:
-            self.conn.close()
-            logger.info("Database disconnected")
-    
-    def query(self, sql: str) -> pd.DataFrame:
-        try:
-            logger.info(f"Executing query: {sql[:100]}...")
-            with self.conn.cursor() as cur:
-                cur.execute(sql)
-                rows = cur.fetchall()
-                cols = [desc[0] for desc in cur.description]
-            logger.info(f"Query returned {len(rows)} rows")
-            return pd.DataFrame(rows, columns=cols)
-        except Exception as e:
-            logger.error(f"Query failed: {e}")
-            raise
 
-# ---------- Lifespan context ----------
+
 @dataclass
 class AppContext:
     db: Database
@@ -72,6 +48,8 @@ async def app_lifespan(server: FastMCP):
     finally:
         logger.info("Cleaning up database connection")
         db.disconnect()
+
+
 
 # ---------- MCP server ----------
 mcp = FastMCP("postgis-server", lifespan=app_lifespan)
@@ -96,7 +74,10 @@ def run_postgis_query(
         logger.error(f"Tool execution failed: {e}")
         return f"Error executing tool run_postgis_query: {str(e)}"
 
-# ← ADD THIS BLOCK
+
+
+
 if __name__ == "__main__":
     logger.info("Starting MCP server")
+    print(f"Running MCP server...", flush=False)
     mcp.run()

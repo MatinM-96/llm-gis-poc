@@ -1,9 +1,17 @@
 from .llm import LLMClient
 from .geo_utils import lookup_kommune, city_bbox_where_clause
-
-from embeddings.retrieve_layers import retrieve_top_layers, format_layer_context, load_index
-
+from embeddings.retrieve_layers import (
+    retrieve_top_layers,
+    format_layer_context,
+    load_index,
+)
 from pathlib import Path
+
+
+
+
+
+
 
 
 
@@ -22,7 +30,13 @@ def validate_plan(plan, layer_index):
 
 def process_user_input(user_input):
     llm = LLMClient()
-    INDEX_PATH = Path(__file__).resolve().parents[1] / "embeddings" / "layer_index.json"
+
+    INDEX_PATH = (
+        Path(__file__).resolve().parents[1]
+        / "embeddings"
+        / "layer_index.json"
+    )
+
     # Normalize user input
     clean_text = llm.normalize_query(user_input)
 
@@ -53,17 +67,9 @@ def process_user_input(user_input):
         )
 
     # Combine where clauses
-    existing = plan.get("where_clause")
-
     if city_filter:
-            plan["where_clause"] = city_filter
+        plan["where_clause"] = city_filter
     else:
-    # Fallback to LLM where clause or TRUE
-           plan["where_clause"] = plan.get("where_clause") or "TRUE"
-
-    # Default limit
-    # if plan.get("limit") is None:
-    #     plan["limit"] = 100
+        plan["where_clause"] = plan.get("where_clause") or "TRUE"
 
     return plan
-

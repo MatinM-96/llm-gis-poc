@@ -1,35 +1,30 @@
-import os
-from openai import OpenAI
-from dotenv import load_dotenv
-from openai import OpenAI
-import json
 from pathlib import Path
+import json
+from openai import OpenAI
+from config import (
+    AZURE_OPENAI_KEY,
+    AZURE_OPENAI_ENDPOINT,
+    AZURE_OPENAI_DEPLOYMENT,
+)
 
 class LLMClient:
     def __init__(self):
-
-        load_dotenv()
-
-        self.AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_KEY")
-        self.AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
-        self.AZURE_OPENAI_DEPLOYMENT = "gpt-4o-mini"
-
         self.client = OpenAI(
-            api_key=self.AZURE_OPENAI_KEY,
-            base_url=f"{self.AZURE_OPENAI_ENDPOINT}/openai/v1/",
+            api_key=AZURE_OPENAI_KEY,
+            base_url=f"{AZURE_OPENAI_ENDPOINT}/openai/v1/",
         )
 
-        
-        BASE_DIR = Path(__file__).parent
-        PROMPT_PATH = BASE_DIR / "system_prompt.txt"
-        
-        with open(PROMPT_PATH, "r", encoding="utf-8") as f:
+        self.model = AZURE_OPENAI_DEPLOYMENT
+
+        base_dir = Path(__file__).parent
+        prompt_path = base_dir / "system_prompt.txt"
+
+        with open(prompt_path, "r", encoding="utf-8") as f:
             self.SYSTEM_PROMPT = f.read()
-        
 
     def normalize_query(self, text: str) -> str:
         resp = self.client.chat.completions.create(
-            model=self.AZURE_OPENAI_DEPLOYMENT,
+            model=self.model,
             messages=[
                 {
                     "role": "system",
@@ -45,7 +40,6 @@ class LLMClient:
         )
         return resp.choices[0].message.content.strip()
 
-
     def plan_spatial_query(self, nl_query: str, layer_context: str | None = None) -> dict:
         user_content = (
             f"{layer_context}\n\nUSER REQUEST:\n{nl_query}"
@@ -54,7 +48,7 @@ class LLMClient:
         )
 
         resp = self.client.chat.completions.create(
-            model=self.AZURE_OPENAI_DEPLOYMENT,
+            model=self.model,
             messages=[
                 {"role": "system", "content": self.SYSTEM_PROMPT},
                 {"role": "user", "content": user_content},
@@ -73,7 +67,7 @@ class LLMClient:
 
     def extract_municipality(self, text: str) -> str:
         resp = self.client.chat.completions.create(
-            model=self.AZURE_OPENAI_DEPLOYMENT,
+            model=self.model,
             messages=[
                 {
                     "role": "system",

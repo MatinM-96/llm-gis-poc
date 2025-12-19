@@ -4,20 +4,19 @@ import pandas as pd
 from mcp.client.session import ClientSession
 from mcp.client.stdio import stdio_client, StdioServerParameters
 
-def mcp_result_to_df(result) -> pd.DataFrame:
-    rows = []
-    for item in result.content:
-        if getattr(item, "type", None) == "text":
-            rows.append(json.loads(item.text))
-    return pd.DataFrame(rows)
 
 async def query_postgis(sql: str) -> pd.DataFrame:
-    import os
+        
+    # Get the project root directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(current_dir)
+    server_script = os.path.join(current_dir, "mcp_server.py")
     
     server_params = StdioServerParameters(
         command="python",
-        args=["mcp_c_s/mcp_server.py"],
-        env=os.environ
+        args=[server_script],
+        env=os.environ,
+        cwd=project_root
     )
     
     result_df = None
@@ -44,20 +43,18 @@ async def query_postgis(sql: str) -> pd.DataFrame:
                         data = json.loads(json_str)
                         result_df = pd.DataFrame(data)
                     except json.JSONDecodeError:
-                        print(f" Invalid JSON response:\n{json_str}")
+                        print(f"Invalid JSON response:\n{json_str}")
                         return pd.DataFrame()
                 else:
                     result_df = pd.DataFrame()
                     
     except BaseException as e:
-        # If we got data before cleanup errors, return it
+        print(f"Error: {e}")
         if result_df is not None and not result_df.empty:
             return result_df
-        
-        # Otherwise it's a real error
-        if "Unknown tool" in str(e):
-            print(f"Tool not found. Available tools on server:")
-            # Could list tools here
         return pd.DataFrame()
     
     return result_df if result_df is not None else pd.DataFrame()
+
+if __name__ == "__main__":
+    print("Client started")

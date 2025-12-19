@@ -1,4 +1,3 @@
-
 import json
 import os
 import sys
@@ -9,9 +8,10 @@ from pathlib import Path
 
 parent_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(parent_dir))
+from database import Database
+from embeddings import embed_text
 
-from .embeddings import embed_text
-from mcp_c_s.mcp_server import Database
+
 
 def main():
     db = Database(os.environ["PGCONN_STRING"])

@@ -23,15 +23,13 @@ def normalize_where_clause(where: str) -> str:
 
 def _get_table_ref(layer: str) -> str:
     """Get proper table reference, handling cases where schema is already included."""
-    if '.' in layer:
-        # Layer already has schema (e.g., "public.buildings")
+    if '.' in layer:     
         return layer
     else:
-        # Add default schema
         return f"public.{layer}"
 
 def sql_select_by_attribute(plan):
-    layer = _get_table_ref(plan["layer"])  # ← Use helper
+    layer = _get_table_ref(plan["layer"]) 
     where = normalize_where_clause(plan.get("where_clause"))
     limit = plan["limit"]
     return f"""
@@ -44,8 +42,8 @@ def sql_select_by_attribute(plan):
     """.strip()
 
 def sql_select_buffer(plan):
-    layer = _get_table_ref(plan["layer"])  # ← Use helper
-    target = _get_table_ref(plan["target_layer"])  # ← Use helper
+    layer = _get_table_ref(plan["layer"]) 
+    target = _get_table_ref(plan["target_layer"])  
     buffer_m = plan["buffer_meters"]
     where = normalize_where_clause(plan.get("where_clause"))
     limit = plan["limit"]
@@ -63,8 +61,8 @@ def sql_select_buffer(plan):
     """.strip()
 
 def sql_select_intersect(plan):
-    layer = _get_table_ref(plan["layer"])  # ← Use helper
-    target = _get_table_ref(plan["target_layer"])  # ← Use helper
+    layer = _get_table_ref(plan["layer"])  
+    target = _get_table_ref(plan["target_layer"]) 
     where = normalize_where_clause(plan.get("where_clause"))
     limit = plan["limit"]
     if not target:
@@ -81,8 +79,8 @@ def sql_select_intersect(plan):
     """.strip()
 
 def sql_select_nearest(plan):
-    layer = _get_table_ref(plan["layer"])  # ← Use helper
-    target = _get_table_ref(plan["target_layer"])  # ← Use helper
+    layer = _get_table_ref(plan["layer"]) 
+    target = _get_table_ref(plan["target_layer"]) 
     limit = plan["limit"]
     if not target:
         raise ValueError("select_nearest requires target_layer")
@@ -103,7 +101,6 @@ def enrich_plan(plan: dict) -> dict:
     if plan["operation"] == "select_buffer":
         plan.setdefault("buffer_meters", 100)
 
-        # enkel mapping fra intensjon → lag
         plan.setdefault("target_layer", "rivers")
 
     if plan.get("limit") is None:
