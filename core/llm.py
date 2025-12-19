@@ -45,21 +45,30 @@ class LLMClient:
         )
         return resp.choices[0].message.content.strip()
 
-    def plan_spatial_query(self, nl_query: str) -> dict:
+
+    def plan_spatial_query(self, nl_query: str, layer_context: str | None = None) -> dict:
+        user_content = (
+            f"{layer_context}\n\nUSER REQUEST:\n{nl_query}"
+            if layer_context
+            else nl_query
+        )
+
         resp = self.client.chat.completions.create(
             model=self.AZURE_OPENAI_DEPLOYMENT,
             messages=[
                 {"role": "system", "content": self.SYSTEM_PROMPT},
-                {"role": "user", "content": nl_query},
+                {"role": "user", "content": user_content},
             ],
             temperature=0.0,
             max_tokens=300,
         )
+
         raw = resp.choices[0].message.content.strip()
         if raw.startswith("```"):
             raw = raw.strip("`")
             if raw.lower().startswith("json"):
                 raw = raw[4:].strip()
+
         return json.loads(raw)
 
     def extract_municipality(self, text: str) -> str:

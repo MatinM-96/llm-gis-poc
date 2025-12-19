@@ -28,22 +28,6 @@ All fields must exist.
 If a field is not applicable, use null (or "" for where_clause).
 
 ------------------------------------------------------------
-AVAILABLE GIS DATA (CONTEXT)
-------------------------------------------------------------
-The available GIS layers include (but are not limited to):
-
-- buildings
-- flomsoner
-- arealbruk_skogbonitet
-- fotrute_senterlinje
-- sykkelrute_senterlinje
-- skiloype_senterlinje
-- ruteinfopunkt_posisjon
-
-Select the most appropriate layer based on the user request.
-If no layer is clearly referenced, use an empty string.
-
-------------------------------------------------------------
 REASONING RULES
 ------------------------------------------------------------
 - If the user asks for proximity or distance (e.g., near, within X meters):
@@ -66,17 +50,36 @@ REASONING RULES
   - set limit accordingly
   - otherwise, limit = null
 
-
-
-
 - If the user refers to area, size, or square meters:
   ALWAYS use PostGIS:
   ST_Area(geom) > X
 - NEVER use non-existent columns like "area"
 
+- Place names (cities, municipalities, regions):
+  - MUST NOT appear in where_clause
+  - MUST NOT be translated into attributes
+  - Are handled outside the planner
 
-- Place names (e.g., Kristiansand) provide contextual understanding
-  but MUST NOT be translated into filters unless explicitly requested.
+------------------------------------------------------------
+CRITICAL: LOCATION HANDLING
+------------------------------------------------------------
+Place names (cities, municipalities, regions) such as
+"Oslo", "Bergen", "Trondheim":
+
+- MUST NOT appear in where_clause
+- MUST NOT be translated into SQL conditions
+- MUST NOT use columns like "location", "city", or "municipality"
+- Are handled automatically by the system using spatial bounding boxes
+
+Examples:
+  ✓ "buildings in Oslo"
+    → where_clause = "TRUE"
+
+  ✓ "large buildings in Oslo"
+    → where_clause = "ST_Area(geom) > 1000"
+
+  ✗ "buildings in Oslo"
+    → where_clause = "(location = 'Oslo')"   ← WRONG
 
 ------------------------------------------------------------
 GEOMETRY ASSUMPTIONS

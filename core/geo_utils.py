@@ -29,3 +29,14 @@ a.geom && ST_Transform(
     ST_SRID(a.geom)
 )
 """.strip()
+
+
+
+# def city_bbox_where_clause(min_lon, min_lat, max_lon, max_lat):
+#     return f"""
+# ST_Transform(a.geom, 4326) && ST_MakeEnvelope(
+#     {min_lon}, {min_lat},
+#     {max_lon}, {max_lat},
+#     4326
+# )
+# """.strip()

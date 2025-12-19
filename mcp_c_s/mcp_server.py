@@ -5,16 +5,16 @@ import os
 import sys
 import psycopg2
 import pandas as pd
+import json  # ← ADD THIS
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.session import ServerSession
-
 from dotenv import load_dotenv
-
 
 # Add logging
 import logging
-logging.basicConfig(level=logging.DEBUG, stream=sys.stderr)
+logging.basicConfig(level=logging.INFO, stream=sys.stderr)  # Changed to INFO
 logger = logging.getLogger(__name__)
+
 load_dotenv()
 
 # ---------- Database ----------
@@ -25,7 +25,7 @@ class Database:
     
     def connect(self) -> "Database":
         try:
-            logger.info(f"Connecting to database...")
+            logger.info("Connecting to database...")
             self.conn = psycopg2.connect(self.conn_str)
             logger.info("Database connected successfully")
             return self
@@ -67,37 +67,36 @@ async def app_lifespan(server: FastMCP):
     logger.info("Initializing database connection")
     db = Database(conn_str).connect()
     try:
-        logger.info("Yielding app context")
+        logger.info("Server ready, yielding app context")
         yield AppContext(db=db)
     finally:
         logger.info("Cleaning up database connection")
         db.disconnect()
 
 # ---------- MCP server ----------
-mcp = FastMCP("My App", lifespan=app_lifespan)
+mcp = FastMCP("postgis-server", lifespan=app_lifespan)
 
 # ---------- Tool ----------
 @mcp.tool(
     name="run_postgis_query",
-    description="Run a SQL query on PostGIS and return a table"
+    description="Execute SQL query on PostGIS database and return results as JSON"
 )
 def run_postgis_query(
     ctx: Context[ServerSession, AppContext],
     sql: str
-) -> list[dict]:
+) -> str:
+    """Execute a SQL query and return results as JSON string."""
     logger.info(f"Tool called with SQL: {sql[:100]}...")
     try:
         df = ctx.request_context.lifespan_context.db.query(sql)
         result = df.to_dict(orient="records")
         logger.info(f"Returning {len(result)} records")
-        return result
+        return json.dumps(result, default=str)
     except Exception as e:
         logger.error(f"Tool execution failed: {e}")
-        raise
+        return f"Error executing tool run_postgis_query: {str(e)}"
 
+# ← ADD THIS BLOCK
 if __name__ == "__main__":
     logger.info("Starting MCP server")
     mcp.run()
-
-
-

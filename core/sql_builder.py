@@ -21,97 +21,82 @@ def normalize_where_clause(where: str) -> str:
 
     return w
 
-
-def sql_select_limit_only(plan):
-    layer = plan["layer"]
-    limit = plan["limit"]
-
-    return f"""
-    SELECT
-        a.*,
-        ST_AsText(ST_Transform(a.geom, 4326)) AS wkt_geom
-    FROM public.{layer} a
-    LIMIT {limit};
-    """.strip()
-
+def _get_table_ref(layer: str) -> str:
+    """Get proper table reference, handling cases where schema is already included."""
+    if '.' in layer:
+        # Layer already has schema (e.g., "public.buildings")
+        return layer
+    else:
+        # Add default schema
+        return f"public.{layer}"
 
 def sql_select_by_attribute(plan):
-    layer = plan["layer"]
+    layer = _get_table_ref(plan["layer"])  # ← Use helper
     where = normalize_where_clause(plan.get("where_clause"))
     limit = plan["limit"]
-
     return f"""
     SELECT
         a.*,
         ST_AsText(ST_Transform(a.geom, 4326)) AS wkt_geom
-    FROM public.{layer} a
+    FROM {layer} a
     WHERE {where}
-    LIMIT {limit};
+    {f"LIMIT {limit}" if limit is not None else ""}
     """.strip()
 
-
 def sql_select_buffer(plan):
-    layer = plan["layer"]
-    target = plan["target_layer"]
+    layer = _get_table_ref(plan["layer"])  # ← Use helper
+    target = _get_table_ref(plan["target_layer"])  # ← Use helper
     buffer_m = plan["buffer_meters"]
     where = normalize_where_clause(plan.get("where_clause"))
     limit = plan["limit"]
-
     if not target or buffer_m is None:
         raise ValueError("select_buffer requires target_layer and buffer_meters")
-
     return f"""
     SELECT
         a.*,
         ST_AsText(ST_Transform(a.geom, 4326)) AS wkt_geom
-    FROM public.{layer} a
-    JOIN public.{target} b
+    FROM {layer} a
+    JOIN {target} b
       ON ST_DWithin(a.geom, b.geom, {buffer_m})
     WHERE {where}
-    LIMIT {limit};
+    {f"LIMIT {limit}" if limit is not None else ""}
     """.strip()
-
-
 
 def sql_select_intersect(plan):
-    layer = plan["layer"]
-    target = plan["target_layer"]
+    layer = _get_table_ref(plan["layer"])  # ← Use helper
+    target = _get_table_ref(plan["target_layer"])  # ← Use helper
     where = normalize_where_clause(plan.get("where_clause"))
     limit = plan["limit"]
-
     if not target:
         raise ValueError("select_intersect requires target_layer")
-
     return f"""
     SELECT
         a.*,
         ST_AsText(ST_Transform(a.geom, 4326)) AS wkt_geom
-    FROM public.{layer} a
-    JOIN public.{target} b
+    FROM {layer} a
+    JOIN {target} b
       ON ST_Intersects(a.geom, b.geom)
     WHERE {where}
-    LIMIT {limit};
+    {f"LIMIT {limit}" if limit is not None else ""}
     """.strip()
-def sql_select_nearest(plan):
-    layer = plan["layer"]
-    target = plan["target_layer"]
-    limit = plan["limit"]
 
+def sql_select_nearest(plan):
+    layer = _get_table_ref(plan["layer"])  # ← Use helper
+    target = _get_table_ref(plan["target_layer"])  # ← Use helper
+    limit = plan["limit"]
     if not target:
         raise ValueError("select_nearest requires target_layer")
-
     return f"""
     SELECT
         a.*,
         ST_AsText(ST_Transform(a.geom, 4326)) AS wkt_geom
-    FROM public.{layer} a
+    FROM {layer} a
     ORDER BY (
         SELECT MIN(ST_Distance(a.geom, b.geom))
-        FROM public.{target} b
+        FROM {target} b
     )
-    LIMIT {limit};
+    {f"LIMIT {limit}" if limit is not None else ""}
     """.strip()
-
 
 
 def enrich_plan(plan: dict) -> dict:

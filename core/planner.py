@@ -1,45 +1,48 @@
 from .llm import LLMClient
 from .geo_utils import lookup_kommune, city_bbox_where_clause
 
+from embeddings.retrieve_layers import retrieve_top_layers, format_layer_context, load_index
+
+from pathlib import Path
 
 
-FIELD_INFO = {
-    
-    "layer": (
-        "The PRIMARY dataset you want results from.\n"
-        "Must match one of the allowed database layers:\n"
-        "- buildings\n"
-        "- flomsoner\n"
-        "- buildings_sample\n"
-        "- arealbruk_skogbonitet_sample\n"
-        "- flomsoner_sample\n"
-        "- sykkelrute_senterlinje_sample\n"
-        "- skiloype_senterlinje\n"
-        "- annenrute_senterlinje\n"
-        "- annenruteinfo_tabell\n"
-        "- arealbruk_skogbonitet\n"
-        "- fotrute_senterlinje\n"
-        "- fotruteinfo_tabell\n"
-        "- ruteinfopunkt_posisjon\n"
-        "- skiloypeinfo_tabell\n"
-        "- sykkelrute_senterlinje\n"
-        "- sykkelruteinfo_tabell"
-    ),
 
-}
+
+def validate_plan(plan, layer_index):
+    valid_layers = {item["layer"] for item in layer_index}
+
+    if plan["layer"] not in valid_layers:
+        raise ValueError(
+            f"Ugyldig lag: {plan['layer']}. "
+            f"Gyldige lag er: {list(valid_layers)[:5]}..."
+        )
+
+    return plan
+
 
 def process_user_input(user_input):
-    
-        
-    llm = LLMClient ()
-
+    llm = LLMClient()
+    INDEX_PATH = Path(__file__).resolve().parents[1] / "embeddings" / "layer_index.json"
+    # Normalize user input
     clean_text = llm.normalize_query(user_input)
 
-    plan = llm.plan_spatial_query(clean_text)
+    # Load layer index (embedding store)
+    layer_index = load_index(INDEX_PATH)
+
+    # Embedding-based context
+    top_layers = retrieve_top_layers(clean_text, k=5)
+    layer_context = format_layer_context(top_layers)
+
+    # LLM creates plan
+    plan = llm.plan_spatial_query(clean_text, layer_context)
+
     if not isinstance(plan, dict):
         return "Invalid plan"
 
-    # --- municipality → bbox filter (kode, ikke LLM) ---
+    # Validate plan (CODE, not LLM)
+    plan = validate_plan(plan, layer_index)
+
+    # Municipality → bbox filter (code, not LLM)
     municipality = llm.extract_municipality(clean_text)
     city_filter = None
 
@@ -49,27 +52,18 @@ def process_user_input(user_input):
             min_lon, min_lat, max_lon, max_lat
         )
 
-    # --- combine where clauses ---
+    # Combine where clauses
     existing = plan.get("where_clause")
 
     if city_filter:
-        if existing and existing.strip():
-            plan["where_clause"] = f"({existing}) AND ({city_filter})"
-        else:
             plan["where_clause"] = city_filter
+    else:
+    # Fallback to LLM where clause or TRUE
+           plan["where_clause"] = plan.get("where_clause") or "TRUE"
 
-    # default limit
-    if plan.get("limit") is None:
-        plan["limit"] = 100
-
-    # layer validation only
-    if not plan.get("layer"):
-        return (
-            "⚠ Unknown or missing layer.\n\n"
-            + FIELD_INFO["layer"]
-            + f"\n\nYour input:\n  {user_input}"
-        )
+    # Default limit
+    # if plan.get("limit") is None:
+    #     plan["limit"] = 100
 
     return plan
-
 
