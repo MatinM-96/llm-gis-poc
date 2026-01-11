@@ -78,6 +78,8 @@ def run_postgis_query(
 
 
 if __name__ == "__main__":
+    import sys
+
     logger.info("Starting MCP server")
-    print(f"Running MCP server...", flush=False)
+    print("Running MCP server...", file=sys.stderr)
     mcp.run()
