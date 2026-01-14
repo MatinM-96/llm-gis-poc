@@ -1,5 +1,5 @@
 from .llm import LLMClient
-from .geo_utils import lookup_kommune, city_bbox_where_clause
+from .geo_utils import *
 from embeddings.retrieve_layers import (
     retrieve_top_layers,
     format_layer_context,
@@ -60,16 +60,16 @@ def process_user_input(user_input):
     municipality = llm.extract_municipality(clean_text)
     city_filter = None
 
+
     if municipality:
-        min_lon, min_lat, max_lon, max_lat = lookup_kommune(municipality)
-        city_filter = city_bbox_where_clause(
-            min_lon, min_lat, max_lon, max_lat
-        )
+        kommune_nr = lookup_kommuneNr(municipality)
+        geo = lookup_kommuneGeo(kommune_nr)  
+        if geo:
+            min_lon, min_lat, max_lon, max_lat = multipolygon_to_bbox(geo)
+            bbox_clause = city_bbox_where_clause(min_lon, min_lat, max_lon, max_lat)
+            poly_clause = city_polygon_where_clause(geo)  
+            
+            city_filter = f"({poly_clause})"
 
-    # Combine where clauses
-    if city_filter:
-        plan["where_clause"] = city_filter
-    else:
-        plan["where_clause"] = plan.get("where_clause") or "TRUE"
-
+    plan["where_clause"] = city_filter or plan.get("where_clause") or "TRUE"
     return plan

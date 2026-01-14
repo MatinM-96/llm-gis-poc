@@ -60,21 +60,38 @@ def sql_select_buffer(plan):
     {f"LIMIT {limit}" if limit is not None else ""}
     """.strip()
 
-def sql_select_intersect(plan):
-    layer = _get_table_ref(plan["layer"])  
-    target = _get_table_ref(plan["target_layer"]) 
-    where = normalize_where_clause(plan.get("where_clause"))
+# def sql_select_intersect(plan):
+#     layer = _get_table_ref(plan["layer"])  
+#     target = _get_table_ref(plan["target_layer"]) 
+#     where = normalize_where_clause(plan.get("where_clause"))
+#     limit = plan["limit"]
+#     if not target:
+#         raise ValueError("select_intersect requires target_layer")
+#     return f"""
+#     SELECT
+#         a.*,
+#         ST_AsText(ST_Transform(a.geom, 4326)) AS wkt_geom
+#     FROM {layer} a
+#     JOIN {target} b
+#       ON ST_Intersects(a.geom, b.geom)
+#     WHERE {where}
+#     {f"LIMIT {limit}" if limit is not None else ""}
+#     """.strip()
+
+
+
+def sql_select_nearest(plan):
+    layer = _get_table_ref(plan["layer"])
+    target = _get_table_ref(plan["target_layer"])
     limit = plan["limit"]
-    if not target:
-        raise ValueError("select_intersect requires target_layer")
+
     return f"""
     SELECT
         a.*,
         ST_AsText(ST_Transform(a.geom, 4326)) AS wkt_geom
     FROM {layer} a
-    JOIN {target} b
-      ON ST_Intersects(a.geom, b.geom)
-    WHERE {where}
+    JOIN {target} b ON TRUE
+    ORDER BY a.geom <-> b.geom
     {f"LIMIT {limit}" if limit is not None else ""}
     """.strip()
 
