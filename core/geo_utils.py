@@ -1,4 +1,5 @@
 import requests
+import json
 
 # def lookup_kommune(name: str):
 #     url = "https://api.kartverket.no/kommuneinfo/v1/sok"
@@ -73,8 +74,8 @@ def multipolygon_to_bbox(coords):
     minx = miny = float("inf")
     maxx = maxy = float("-inf")
 
-    for polygon in coords:      # [[[]]]
-        for ring in polygon:    # [[]]
+    for polygon in coords:     
+        for ring in polygon:   
             for lon, lat in ring:
                 minx = min(minx, lon)
                 miny = min(miny, lat)
@@ -84,13 +85,6 @@ def multipolygon_to_bbox(coords):
     return minx, miny, maxx, maxy
 
 
-
-
-
-
-
-
-import json
 
 def city_polygon_where_clause(coords_4326, target_srid=25833, geom_col="a.geom"):
     geojson = json.dumps({"type": "MultiPolygon", "coordinates": coords_4326})
@@ -106,12 +100,12 @@ ST_Intersects(
 
 
 
-if __name__ == "__main__":
-    # print(lookup_kommuneNr("Oslo"))
+# if __name__ == "__main__":
+#     print(lookup_kommuneNr("Oslo"))
     
     
 
-    # print(lookup_kommuneGeo("4202"))
+#     # print(lookup_kommuneGeo("4202"))
 
-    # bbox = lookup_kommuneGeo("42")
-    # print(multipolygon_to_bbox(bbox))
+#     # bbox = lookup_kommuneGeo("42")
+#     # print(multipolygon_to_bbox(bbox))
